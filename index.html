@@ -1,0 +1,1033 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!doctype html>
+<html lang="en" class="h-full">
+ <head><!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Management System</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; margin: 0; }
+    .mono { font-family: 'Space Mono', monospace; }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .slide-up { animation: slideUp 0.4s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    input:focus, textarea:focus { outline: none; }
+    .toast-enter { animation: toastIn 0.3s ease; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full">
+  <div id="app" class="h-full w-full overflow-auto" style="background:#0f172a; color:#e2e8f0;">
+   <!-- Toast -->
+   <div id="toast" class="fixed top-4 right-4 z-50 hidden"></div><!-- HOME VIEW -->
+   <div id="view-home" class="h-full flex flex-col items-center justify-center p-6">
+    <div class="text-center max-w-lg w-full slide-up">
+     <div class="mb-2 flex justify-center">
+      <div style="background:#6d28d9;" class="w-16 h-16 rounded-2xl flex items-center justify-center">
+       <i data-lucide="database" style="width:32px;height:32px;color:#e2e8f0;"></i>
+      </div>
+     </div>
+     <h1 id="el-app-title" class="text-3xl font-bold mb-1" style="color:#f8fafc;">Data Management System</h1>
+     <p class="text-sm mb-10" style="color:#94a3b8;">Securely store, search, and manage records</p>
+     <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <button onclick="showPasswordGate()" class="flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-semibold text-base transition-all hover:scale-105" style="background:#6d28d9;color:#f8fafc;"> <i data-lucide="plus-circle" style="width:20px;height:20px;"></i> Add Information </button> <button onclick="switchView('search')" class="flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-semibold text-base transition-all hover:scale-105" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;"> <i data-lucide="search" style="width:20px;height:20px;"></i> Search Information </button>
+     </div>
+    </div>
+   </div><!-- PASSWORD GATE -->
+   <div id="view-password" class="h-full flex flex-col items-center justify-center p-6 hidden">
+    <div class="max-w-sm w-full slide-up">
+     <button onclick="switchView('home')" class="flex items-center gap-2 mb-6 text-sm" style="color:#94a3b8;"> <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Back </button>
+     <div class="p-8 rounded-2xl" style="background:#1e293b;border:1px solid #334155;">
+      <div class="flex justify-center mb-4">
+       <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:#6d28d9;">
+        <i data-lucide="lock" style="width:24px;height:24px;color:#e2e8f0;"></i>
+       </div>
+      </div>
+      <h2 class="text-xl font-bold text-center mb-1" style="color:#f8fafc;">Authentication Required</h2>
+      <p class="text-center text-sm mb-6" style="color:#94a3b8;">Enter password to access the add/edit section</p><label for="pw-input" class="block text-xs font-medium mb-2" style="color:#94a3b8;">Password</label> <input id="pw-input" type="password" class="w-full px-4 py-3 rounded-lg text-sm mb-2" style="background:#0f172a;color:#e2e8f0;border:1px solid #334155;" placeholder="Enter password">
+      <p id="pw-error" class="text-xs mb-4 hidden" style="color:#ef4444;">Incorrect password. Please try again.</p><button onclick="checkPassword()" class="w-full py-3 rounded-lg font-semibold text-sm transition-all hover:opacity-90" style="background:#6d28d9;color:#f8fafc;">Unlock</button>
+     </div>
+    </div>
+   </div><!-- ADD/EDIT VIEW -->
+   <div id="view-add" class="h-full flex flex-col hidden">
+    <header class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid #1e293b;">
+     <button onclick="switchView('home');isEditing=false;" class="flex items-center gap-2 text-sm" style="color:#94a3b8;"> <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Home </button>
+     <h2 id="form-heading" class="font-bold" style="color:#f8fafc;">Add New Record</h2>
+     <div style="width:60px;"></div>
+    </header>
+    <div class="flex-1 overflow-auto p-6">
+     <form id="data-form" class="max-w-2xl mx-auto space-y-4 fade-in" onsubmit="return false;">
+      <!-- Core fields -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+       <div>
+        <label for="f-id" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Identification Number *</label> <input id="f-id" required class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Unique ID">
+       </div>
+       <div>
+        <label for="f-name" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Name *</label> <input id="f-name" required class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Full name">
+       </div>
+      </div>
+      <div>
+       <label for="f-address" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Address</label> <textarea id="f-address" rows="2" class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;resize:vertical;" placeholder="Full address"></textarea>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+       <div>
+        <label for="f-phone" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Phone Number</label> <input id="f-phone" type="tel" class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Phone">
+       </div>
+       <div>
+        <label for="f-email" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Email</label> <input id="f-email" type="email" class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Email">
+       </div>
+      </div><!-- 18 additional fields -->
+      <div class="pt-2">
+       <p class="text-xs font-semibold mb-3 mono" style="color:#6d28d9;">ADDITIONAL FIELDS</p>
+       <div id="additional-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div><!-- Dynamic custom fields -->
+      <div class="pt-2">
+       <div class="flex items-center justify-between mb-3">
+        <p class="text-xs font-semibold mono" style="color:#6d28d9;">CUSTOM FIELDS</p><button type="button" onclick="addCustomField()" class="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-all hover:opacity-80" style="background:#6d28d9;color:#f8fafc;"> <i data-lucide="plus" style="width:14px;height:14px;"></i> Add Field </button>
+       </div>
+       <div id="custom-fields" class="space-y-3"></div>
+      </div><!-- ID conflict warning -->
+      <p id="id-conflict" class="text-xs hidden" style="color:#ef4444;">A record with this ID already exists. Use edit mode to update it.</p><!-- Actions -->
+      <div class="flex gap-3 pt-4 pb-8">
+       <button type="button" id="btn-save" onclick="saveRecord()" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90" style="background:#6d28d9;color:#f8fafc;"> <i data-lucide="save" style="width:16px;height:16px;"></i> <span id="btn-save-text">Save Record</span> </button> <button type="button" onclick="resetForm()" class="px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-80" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;">Clear</button>
+      </div>
+     </form>
+    </div>
+   </div><!-- SEARCH VIEW -->
+   <div id="view-search" class="h-full flex flex-col hidden">
+    <header class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid #1e293b;">
+     <button onclick="switchView('home')" class="flex items-center gap-2 text-sm" style="color:#94a3b8;"> <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Home </button>
+     <h2 class="font-bold" style="color:#f8fafc;">Search Records</h2>
+     <div style="width:60px;"></div>
+    </header>
+    <div class="flex-1 overflow-auto p-6">
+     <div class="max-w-2xl mx-auto fade-in">
+      <div class="flex gap-2 mb-6">
+       <input id="search-input" class="flex-1 px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Enter Identification Number..."> <button onclick="searchRecord()" class="px-6 py-3 rounded-lg font-semibold text-sm transition-all hover:opacity-90" style="background:#6d28d9;color:#f8fafc;"> <i data-lucide="search" style="width:16px;height:16px;"></i> </button>
+      </div>
+      <div id="search-results"></div>
+     </div>
+    </div>
+   </div><!-- DELETE CONFIRMATION MODAL -->
+   <div id="delete-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,0.6);">
+    <div class="p-6 rounded-2xl max-w-sm w-full" style="background:#1e293b;border:1px solid #334155;">
+     <h3 class="font-bold text-lg mb-2" style="color:#f8fafc;">Delete Record?</h3>
+     <p class="text-sm mb-6" style="color:#94a3b8;">This action cannot be undone. The record will be permanently removed.</p>
+     <div class="flex gap-3">
+      <button onclick="confirmDelete()" class="flex-1 py-2.5 rounded-lg font-semibold text-sm" style="background:#ef4444;color:#fff;">Delete</button> <button onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-lg font-semibold text-sm" style="background:#334155;color:#e2e8f0;">Cancel</button>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+// State
+let allRecords = [];
+let isAuthenticated = false;
+let isEditing = false;
+let editingRecord = null;
+let pendingDeleteRecord = null;
+let customFieldCount = 0;
+
+const ADDITIONAL_LABELS = [
+  'Date of Birth','Gender','Nationality','Occupation','Company',
+  'Department','Employee ID','Blood Group','Marital Status','Emergency Contact',
+  'Emergency Phone','Father\'s Name','Mother\'s Name','Spouse Name',
+  'Annual Income','Education Level','Languages Known','Notes'
+];
+
+// Default config
+const defaultConfig = {
+  app_title: 'Data Management System',
+  search_placeholder: 'Enter Identification Number...',
+  background_color: '#0f172a',
+  surface_color: '#1e293b',
+  text_color: '#e2e8f0',
+  primary_action: '#6d28d9',
+  secondary_action: '#334155',
+  font_family: 'DM Sans',
+  font_size: 14
+};
+
+// Element SDK init
+window.elementSdk.init({
+  defaultConfig,
+  onConfigChange: async (config) => {
+    const bg = config.background_color || defaultConfig.background_color;
+    const sf = config.surface_color || defaultConfig.surface_color;
+    const tx = config.text_color || defaultConfig.text_color;
+    const pa = config.primary_action || defaultConfig.primary_action;
+    const sa = config.secondary_action || defaultConfig.secondary_action;
+    const ff = config.font_family || defaultConfig.font_family;
+    const fs = config.font_size || defaultConfig.font_size;
+
+    const app = document.getElementById('app');
+    app.style.background = bg;
+    app.style.color = tx;
+    app.style.fontFamily = `${ff}, sans-serif`;
+    app.style.fontSize = fs + 'px';
+
+    const title = document.getElementById('el-app-title');
+    if (title) title.textContent = config.app_title || defaultConfig.app_title;
+
+    const si = document.getElementById('search-input');
+    if (si) si.placeholder = config.search_placeholder || defaultConfig.search_placeholder;
+
+    // Update surface colors
+    document.querySelectorAll('[style*="background:#1e293b"]').forEach(el => {
+      el.style.background = sf;
+    });
+    // Update primary action
+    document.querySelectorAll('[style*="background:#6d28d9"]').forEach(el => {
+      el.style.background = pa;
+    });
+  },
+  mapToCapabilities: (config) => ({
+    recolorables: [
+      { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }},
+      { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }},
+      { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }},
+      { get: () => config.primary_action || defaultConfig.primary_action, set: (v) => { config.primary_action = v; window.elementSdk.setConfig({ primary_action: v }); }},
+      { get: () => config.secondary_action || defaultConfig.secondary_action, set: (v) => { config.secondary_action = v; window.elementSdk.setConfig({ secondary_action: v }); }}
+    ],
+    borderables: [],
+    fontEditable: {
+      get: () => config.font_family || defaultConfig.font_family,
+      set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
+    },
+    fontSizeable: {
+      get: () => config.font_size || defaultConfig.font_size,
+      set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
+    }
+  }),
+  mapToEditPanelValues: (config) => new Map([
+    ['app_title', config.app_title || defaultConfig.app_title],
+    ['search_placeholder', config.search_placeholder || defaultConfig.search_placeholder]
+  ])
+});
+
+// Data SDK init
+const dataHandler = {
+  onDataChanged(data) {
+    allRecords = data;
+  }
+};
+window.dataSdk.init(dataHandler);
+
+// Build additional fields
+function buildAdditionalFields() {
+  const container = document.getElementById('additional-fields');
+  container.innerHTML = '';
+  ADDITIONAL_LABELS.forEach((label, i) => {
+    const n = i + 1;
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <label for="f-add-${n}" class="block text-xs font-medium mb-1" style="color:#94a3b8;">${label}</label>
+      <input id="f-add-${n}" class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="${label}">
+    `;
+    container.appendChild(div);
+  });
+}
+buildAdditionalFields();
+
+// Views
+function switchView(view) {
+  ['home','password','add','search'].forEach(v => {
+    document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
+  });
+  if (view === 'add') {
+    document.getElementById('f-id').disabled = isEditing;
+    document.getElementById('form-heading').textContent = isEditing ? 'Edit Record' : 'Add New Record';
+    document.getElementById('btn-save-text').textContent = isEditing ? 'Update Record' : 'Save Record';
+  }
+}
+
+function showPasswordGate() {
+  if (isAuthenticated) { switchView('add'); return; }
+  switchView('password');
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-error').classList.add('hidden');
+  setTimeout(() => document.getElementById('pw-input').focus(), 100);
+}
+
+function checkPassword() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === '75575718') {
+    isAuthenticated = true;
+    localStorage.setItem('dms_auth', 'true');
+    document.getElementById('pw-input').value = '';
+    switchView('add');
+  } else {
+    document.getElementById('pw-error').classList.remove('hidden');
+  }
+}
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+
+// Toast
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  const bg = type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#6d28d9';
+  t.innerHTML = `<div class="toast-enter px-5 py-3 rounded-xl text-sm font-medium shadow-lg" style="background:${bg};color:#fff;">${msg}</div>`;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3000);
+}
+
+// Custom fields
+function addCustomField() {
+  customFieldCount++;
+  const container = document.getElementById('custom-fields');
+  const div = document.createElement('div');
+  div.className = 'flex gap-2 items-end fade-in';
+  div.id = 'cf-' + customFieldCount;
+  div.innerHTML = `
+    <div class="flex-1">
+      <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Field Name</label>
+      <input class="cf-name w-full px-3 py-2.5 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Field name">
+    </div>
+    <div class="flex-1">
+      <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Value</label>
+      <input class="cf-value w-full px-3 py-2.5 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Value">
+    </div>
+    <button type="button" onclick="this.parentElement.remove()" class="p-2.5 rounded-lg" style="background:#334155;color:#94a3b8;"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+  `;
+  container.appendChild(div);
+  lucide.createIcons();
+}
+
+// Save / Update
+async function saveRecord() {
+  const idVal = document.getElementById('f-id').value.trim();
+  const nameVal = document.getElementById('f-name').value.trim();
+  if (!idVal || !nameVal) { showToast('ID and Name are required', 'error'); return; }
+
+  // Check duplicate
+  if (!isEditing) {
+    const dup = allRecords.find(r => r.identification_number === idVal);
+    if (dup) {
+      document.getElementById('id-conflict').classList.remove('hidden');
+      return;
+    }
+  }
+  document.getElementById('id-conflict').classList.add('hidden');
+
+  // Limit check
+  if (!isEditing && allRecords.length >= 999) {
+    showToast('Maximum 999 records reached. Delete some first.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+
+  // Gather fields
+  const record = {
+    identification_number: idVal,
+    name: nameVal,
+    address: document.getElementById('f-address').value,
+    phone_number: document.getElementById('f-phone').value,
+    email: document.getElementById('f-email').value
+  };
+  for (let i = 1; i <= 18; i++) {
+    record['field_' + i] = document.getElementById('f-add-' + i).value;
+  }
+
+  // Custom fields as JSON string
+  const customArr = [];
+  document.querySelectorAll('#custom-fields > div').forEach(div => {
+    const n = div.querySelector('.cf-name')?.value?.trim();
+    const v = div.querySelector('.cf-value')?.value?.trim();
+    if (n) customArr.push({ name: n, value: v || '' });
+  });
+  record.custom_fields_json = JSON.stringify(customArr);
+
+  let result;
+  if (isEditing && editingRecord) {
+    const updated = { ...editingRecord, ...record };
+    result = await window.dataSdk.update(updated);
+  } else {
+    result = await window.dataSdk.create(record);
+  }
+
+  btn.disabled = false;
+  btn.style.opacity = '1';
+
+  if (result.isOk) {
+    showToast(isEditing ? 'Record updated!' : 'Record saved!', 'success');
+    if (!isEditing) {
+      resetForm();
+      document.getElementById('pw-input').value = '';
+    }
+    isEditing = false;
+    editingRecord = null;
+  } else {
+    showToast('Error saving record', 'error');
+  }
+}
+
+function resetForm() {
+  document.getElementById('f-id').value = '';
+  document.getElementById('f-id').disabled = false;
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-address').value = '';
+  document.getElementById('f-phone').value = '';
+  document.getElementById('f-email').value = '';
+  for (let i = 1; i <= 18; i++) document.getElementById('f-add-' + i).value = '';
+  document.getElementById('custom-fields').innerHTML = '';
+  document.getElementById('id-conflict').classList.add('hidden');
+  isEditing = false;
+  editingRecord = null;
+  document.getElementById('form-heading').textContent = 'Add New Record';
+  document.getElementById('btn-save-text').textContent = 'Save Record';
+}
+
+// Search
+function searchRecord() {
+  const q = document.getElementById('search-input').value.trim();
+  const container = document.getElementById('search-results');
+  if (!q) {
+    // Show all records
+    if (allRecords.length === 0) {
+      container.innerHTML = `<div class="text-center py-12"><i data-lucide="inbox" style="width:48px;height:48px;color:#334155;margin:0 auto 12px;display:block;"></i><p style="color:#64748b;">No records found</p></div>`;
+      lucide.createIcons();
+      return;
+    }
+    renderResults(allRecords);
+    return;
+  }
+  const found = allRecords.filter(r => r.identification_number === q);
+  if (found.length === 0) {
+    container.innerHTML = `<div class="text-center py-12 fade-in"><i data-lucide="search-x" style="width:48px;height:48px;color:#334155;margin:0 auto 12px;display:block;"></i><p style="color:#64748b;">No record found for ID: <span class="mono">${q}</span></p></div>`;
+    lucide.createIcons();
+  } else {
+    renderResults(found);
+  }
+}
+
+document.getElementById('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') searchRecord(); });
+
+function renderResults(records) {
+  const container = document.getElementById('search-results');
+  container.innerHTML = '';
+  records.forEach(rec => {
+    const card = document.createElement('div');
+    card.className = 'rounded-2xl p-6 mb-4 fade-in';
+    card.style.cssText = 'background:#1e293b;border:1px solid #334155;';
+
+    let customFields = [];
+    try { customFields = JSON.parse(rec.custom_fields_json || '[]'); } catch(e) {}
+
+    const rows = [
+      ['Identification Number', rec.identification_number],
+      ['Name', rec.name],
+      ['Address', rec.address],
+      ['Phone', rec.phone_number],
+      ['Email', rec.email]
+    ];
+    for (let i = 0; i < 18; i++) {
+      const v = rec['field_' + (i+1)];
+      if (v) rows.push([ADDITIONAL_LABELS[i], v]);
+    }
+    customFields.forEach(cf => { if (cf.name) rows.push([cf.name, cf.value]); });
+
+    let html = `<div class="flex items-start justify-between mb-4">
+      <div><h3 class="font-bold text-lg" style="color:#f8fafc;">${rec.name || 'Unnamed'}</h3>
+      <p class="mono text-xs" style="color:#6d28d9;">ID: ${rec.identification_number}</p></div>
+      <div class="flex gap-2">
+        <button onclick="editRecord('${rec.identification_number}')" class="p-2 rounded-lg transition-all hover:opacity-80" style="background:#6d28d9;color:#f8fafc;" title="Edit"><i data-lucide="edit-2" style="width:14px;height:14px;"></i></button>
+        <button onclick="requestDelete('${rec.identification_number}')" class="p-2 rounded-lg transition-all hover:opacity-80" style="background:#ef4444;color:#fff;" title="Delete"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+      </div></div>`;
+
+    html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">';
+    rows.forEach(([label, val]) => {
+      if (val) html += `<div class="py-1.5" style="border-bottom:1px solid #0f172a;"><span class="text-xs" style="color:#64748b;">${label}</span><p class="text-sm" style="color:#e2e8f0;">${val}</p></div>`;
+    });
+    html += '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+  lucide.createIcons();
+}
+
+function editRecord(id) {
+  if (!isAuthenticated) { showPasswordGate(); return; }
+  const rec = allRecords.find(r => r.identification_number === id);
+  if (!rec) return;
+  isEditing = true;
+  editingRecord = rec;
+
+  document.getElementById('f-id').value = rec.identification_number;
+  document.getElementById('f-name').value = rec.name || '';
+  document.getElementById('f-address').value = rec.address || '';
+  document.getElementById('f-phone').value = rec.phone_number || '';
+  document.getElementById('f-email').value = rec.email || '';
+  for (let i = 1; i <= 18; i++) {
+    document.getElementById('f-add-' + i).value = rec['field_' + i] || '';
+  }
+
+  // Load custom fields
+  document.getElementById('custom-fields').innerHTML = '';
+  customFieldCount = 0;
+  try {
+    const cfs = JSON.parse(rec.custom_fields_json || '[]');
+    cfs.forEach(cf => {
+      addCustomField();
+      const last = document.getElementById('custom-fields').lastElementChild;
+      last.querySelector('.cf-name').value = cf.name;
+      last.querySelector('.cf-value').value = cf.value;
+    });
+  } catch(e) {}
+
+  switchView('add');
+}
+
+// Delete
+function requestDelete(id) {
+  pendingDeleteRecord = allRecords.find(r => r.identification_number === id);
+  if (pendingDeleteRecord) document.getElementById('delete-modal').classList.remove('hidden');
+}
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.add('hidden');
+  pendingDeleteRecord = null;
+}
+async function confirmDelete() {
+  if (!pendingDeleteRecord) return;
+  const result = await window.dataSdk.delete(pendingDeleteRecord);
+  closeDeleteModal();
+  if (result.isOk) {
+    showToast('Record deleted', 'success');
+    searchRecord();
+  } else {
+    showToast('Error deleting record', 'error');
+  }
+}
+
+// Init icons
+lucide.createIcons();
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e924f19e754e084',t:'MTc3NTY2MjE4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+  <title>Data Management System</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; margin: 0; }
+    .mono { font-family: 'Space Mono', monospace; }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .slide-up { animation: slideUp 0.4s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    input:focus, textarea:focus { outline: none; }
+    .toast-enter { animation: toastIn 0.3s ease; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full">
+  <div id="app" class="h-full w-full overflow-auto" style="background:#0f172a; color:#e2e8f0;">
+   <!-- Toast -->
+   <div id="toast" class="fixed top-4 right-4 z-50 hidden"></div><!-- HOME VIEW -->
+   <div id="view-home" class="h-full flex flex-col items-center justify-center p-6">
+    <div class="text-center max-w-lg w-full slide-up">
+     <div class="mb-2 flex justify-center">
+      <div style="background:#6d28d9;" class="w-16 h-16 rounded-2xl flex items-center justify-center">
+       <i data-lucide="database" style="width:32px;height:32px;color:#e2e8f0;"></i>
+      </div>
+     </div>
+     <h1 id="el-app-title" class="text-3xl font-bold mb-1" style="color:#f8fafc;">Data Management System</h1>
+     <p class="text-sm mb-10" style="color:#94a3b8;">Securely store, search, and manage records</p>
+     <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <button onclick="showPasswordGate()" class="flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-semibold text-base transition-all hover:scale-105" style="background:#6d28d9;color:#f8fafc;"> <i data-lucide="plus-circle" style="width:20px;height:20px;"></i> Add Information </button> <button onclick="switchView('search')" class="flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-semibold text-base transition-all hover:scale-105" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;"> <i data-lucide="search" style="width:20px;height:20px;"></i> Search Information </button>
+     </div>
+    </div>
+   </div><!-- PASSWORD GATE -->
+   <div id="view-password" class="h-full flex flex-col items-center justify-center p-6 hidden">
+    <div class="max-w-sm w-full slide-up">
+     <button onclick="switchView('home')" class="flex items-center gap-2 mb-6 text-sm" style="color:#94a3b8;"> <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Back </button>
+     <div class="p-8 rounded-2xl" style="background:#1e293b;border:1px solid #334155;">
+      <div class="flex justify-center mb-4">
+       <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:#6d28d9;">
+        <i data-lucide="lock" style="width:24px;height:24px;color:#e2e8f0;"></i>
+       </div>
+      </div>
+      <h2 class="text-xl font-bold text-center mb-1" style="color:#f8fafc;">Authentication Required</h2>
+      <p class="text-center text-sm mb-6" style="color:#94a3b8;">Enter password to access the add/edit section</p><label for="pw-input" class="block text-xs font-medium mb-2" style="color:#94a3b8;">Password</label> <input id="pw-input" type="password" class="w-full px-4 py-3 rounded-lg text-sm mb-2" style="background:#0f172a;color:#e2e8f0;border:1px solid #334155;" placeholder="Enter password">
+      <p id="pw-error" class="text-xs mb-4 hidden" style="color:#ef4444;">Incorrect password. Please try again.</p><button onclick="checkPassword()" class="w-full py-3 rounded-lg font-semibold text-sm transition-all hover:opacity-90" style="background:#6d28d9;color:#f8fafc;">Unlock</button>
+     </div>
+    </div>
+   </div><!-- ADD/EDIT VIEW -->
+   <div id="view-add" class="h-full flex flex-col hidden">
+    <header class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid #1e293b;">
+     <button onclick="switchView('home');isEditing=false;" class="flex items-center gap-2 text-sm" style="color:#94a3b8;"> <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Home </button>
+     <h2 id="form-heading" class="font-bold" style="color:#f8fafc;">Add New Record</h2>
+     <div style="width:60px;"></div>
+    </header>
+    <div class="flex-1 overflow-auto p-6">
+     <form id="data-form" class="max-w-2xl mx-auto space-y-4 fade-in" onsubmit="return false;">
+      <!-- Core fields -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+       <div>
+        <label for="f-id" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Identification Number *</label> <input id="f-id" required class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Unique ID">
+       </div>
+       <div>
+        <label for="f-name" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Name *</label> <input id="f-name" required class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Full name">
+       </div>
+      </div>
+      <div>
+       <label for="f-address" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Address</label> <textarea id="f-address" rows="2" class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;resize:vertical;" placeholder="Full address"></textarea>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+       <div>
+        <label for="f-phone" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Phone Number</label> <input id="f-phone" type="tel" class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Phone">
+       </div>
+       <div>
+        <label for="f-email" class="block text-xs font-medium mb-1" style="color:#94a3b8;">Email</label> <input id="f-email" type="email" class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Email">
+       </div>
+      </div><!-- 18 additional fields -->
+      <div class="pt-2">
+       <p class="text-xs font-semibold mb-3 mono" style="color:#6d28d9;">ADDITIONAL FIELDS</p>
+       <div id="additional-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div><!-- Dynamic custom fields -->
+      <div class="pt-2">
+       <div class="flex items-center justify-between mb-3">
+        <p class="text-xs font-semibold mono" style="color:#6d28d9;">CUSTOM FIELDS</p><button type="button" onclick="addCustomField()" class="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-all hover:opacity-80" style="background:#6d28d9;color:#f8fafc;"> <i data-lucide="plus" style="width:14px;height:14px;"></i> Add Field </button>
+       </div>
+       <div id="custom-fields" class="space-y-3"></div>
+      </div><!-- ID conflict warning -->
+      <p id="id-conflict" class="text-xs hidden" style="color:#ef4444;">A record with this ID already exists. Use edit mode to update it.</p><!-- Actions -->
+      <div class="flex gap-3 pt-4 pb-8">
+       <button type="button" id="btn-save" onclick="saveRecord()" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90" style="background:#6d28d9;color:#f8fafc;"> <i data-lucide="save" style="width:16px;height:16px;"></i> <span id="btn-save-text">Save Record</span> </button> <button type="button" onclick="resetForm()" class="px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-80" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;">Clear</button>
+      </div>
+     </form>
+    </div>
+   </div><!-- SEARCH VIEW -->
+   <div id="view-search" class="h-full flex flex-col hidden">
+    <header class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid #1e293b;">
+     <button onclick="switchView('home')" class="flex items-center gap-2 text-sm" style="color:#94a3b8;"> <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Home </button>
+     <h2 class="font-bold" style="color:#f8fafc;">Search Records</h2>
+     <div style="width:60px;"></div>
+    </header>
+    <div class="flex-1 overflow-auto p-6">
+     <div class="max-w-2xl mx-auto fade-in">
+      <div class="flex gap-2 mb-6">
+       <input id="search-input" class="flex-1 px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Enter Identification Number..."> <button onclick="searchRecord()" class="px-6 py-3 rounded-lg font-semibold text-sm transition-all hover:opacity-90" style="background:#6d28d9;color:#f8fafc;"> <i data-lucide="search" style="width:16px;height:16px;"></i> </button>
+      </div>
+      <div id="search-results"></div>
+     </div>
+    </div>
+   </div><!-- DELETE CONFIRMATION MODAL -->
+   <div id="delete-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,0.6);">
+    <div class="p-6 rounded-2xl max-w-sm w-full" style="background:#1e293b;border:1px solid #334155;">
+     <h3 class="font-bold text-lg mb-2" style="color:#f8fafc;">Delete Record?</h3>
+     <p class="text-sm mb-6" style="color:#94a3b8;">This action cannot be undone. The record will be permanently removed.</p>
+     <div class="flex gap-3">
+      <button onclick="confirmDelete()" class="flex-1 py-2.5 rounded-lg font-semibold text-sm" style="background:#ef4444;color:#fff;">Delete</button> <button onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-lg font-semibold text-sm" style="background:#334155;color:#e2e8f0;">Cancel</button>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+// State
+let allRecords = [];
+let isAuthenticated = false;
+let isEditing = false;
+let editingRecord = null;
+let pendingDeleteRecord = null;
+let customFieldCount = 0;
+
+const ADDITIONAL_LABELS = [
+  'Date of Birth','Gender','Nationality','Occupation','Company',
+  'Department','Employee ID','Blood Group','Marital Status','Emergency Contact',
+  'Emergency Phone','Father\'s Name','Mother\'s Name','Spouse Name',
+  'Annual Income','Education Level','Languages Known','Notes'
+];
+
+// Default config
+const defaultConfig = {
+  app_title: 'Data Management System',
+  search_placeholder: 'Enter Identification Number...',
+  background_color: '#0f172a',
+  surface_color: '#1e293b',
+  text_color: '#e2e8f0',
+  primary_action: '#6d28d9',
+  secondary_action: '#334155',
+  font_family: 'DM Sans',
+  font_size: 14
+};
+
+// Element SDK init
+window.elementSdk.init({
+  defaultConfig,
+  onConfigChange: async (config) => {
+    const bg = config.background_color || defaultConfig.background_color;
+    const sf = config.surface_color || defaultConfig.surface_color;
+    const tx = config.text_color || defaultConfig.text_color;
+    const pa = config.primary_action || defaultConfig.primary_action;
+    const sa = config.secondary_action || defaultConfig.secondary_action;
+    const ff = config.font_family || defaultConfig.font_family;
+    const fs = config.font_size || defaultConfig.font_size;
+
+    const app = document.getElementById('app');
+    app.style.background = bg;
+    app.style.color = tx;
+    app.style.fontFamily = `${ff}, sans-serif`;
+    app.style.fontSize = fs + 'px';
+
+    const title = document.getElementById('el-app-title');
+    if (title) title.textContent = config.app_title || defaultConfig.app_title;
+
+    const si = document.getElementById('search-input');
+    if (si) si.placeholder = config.search_placeholder || defaultConfig.search_placeholder;
+
+    // Update surface colors
+    document.querySelectorAll('[style*="background:#1e293b"]').forEach(el => {
+      el.style.background = sf;
+    });
+    // Update primary action
+    document.querySelectorAll('[style*="background:#6d28d9"]').forEach(el => {
+      el.style.background = pa;
+    });
+  },
+  mapToCapabilities: (config) => ({
+    recolorables: [
+      { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }},
+      { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }},
+      { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }},
+      { get: () => config.primary_action || defaultConfig.primary_action, set: (v) => { config.primary_action = v; window.elementSdk.setConfig({ primary_action: v }); }},
+      { get: () => config.secondary_action || defaultConfig.secondary_action, set: (v) => { config.secondary_action = v; window.elementSdk.setConfig({ secondary_action: v }); }}
+    ],
+    borderables: [],
+    fontEditable: {
+      get: () => config.font_family || defaultConfig.font_family,
+      set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
+    },
+    fontSizeable: {
+      get: () => config.font_size || defaultConfig.font_size,
+      set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
+    }
+  }),
+  mapToEditPanelValues: (config) => new Map([
+    ['app_title', config.app_title || defaultConfig.app_title],
+    ['search_placeholder', config.search_placeholder || defaultConfig.search_placeholder]
+  ])
+});
+
+// Data SDK init
+const dataHandler = {
+  onDataChanged(data) {
+    allRecords = data;
+  }
+};
+window.dataSdk.init(dataHandler);
+
+// Build additional fields
+function buildAdditionalFields() {
+  const container = document.getElementById('additional-fields');
+  container.innerHTML = '';
+  ADDITIONAL_LABELS.forEach((label, i) => {
+    const n = i + 1;
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <label for="f-add-${n}" class="block text-xs font-medium mb-1" style="color:#94a3b8;">${label}</label>
+      <input id="f-add-${n}" class="w-full px-4 py-3 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="${label}">
+    `;
+    container.appendChild(div);
+  });
+}
+buildAdditionalFields();
+
+// Views
+function switchView(view) {
+  ['home','password','add','search'].forEach(v => {
+    document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
+  });
+  if (view === 'add') {
+    document.getElementById('f-id').disabled = isEditing;
+    document.getElementById('form-heading').textContent = isEditing ? 'Edit Record' : 'Add New Record';
+    document.getElementById('btn-save-text').textContent = isEditing ? 'Update Record' : 'Save Record';
+  }
+}
+
+function showPasswordGate() {
+  if (isAuthenticated) { switchView('add'); return; }
+  switchView('password');
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-error').classList.add('hidden');
+  setTimeout(() => document.getElementById('pw-input').focus(), 100);
+}
+
+function checkPassword() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === '75575718') {
+    isAuthenticated = true;
+    localStorage.setItem('dms_auth', 'true');
+    document.getElementById('pw-input').value = '';
+    switchView('add');
+  } else {
+    document.getElementById('pw-error').classList.remove('hidden');
+  }
+}
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+
+// Toast
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  const bg = type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#6d28d9';
+  t.innerHTML = `<div class="toast-enter px-5 py-3 rounded-xl text-sm font-medium shadow-lg" style="background:${bg};color:#fff;">${msg}</div>`;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3000);
+}
+
+// Custom fields
+function addCustomField() {
+  customFieldCount++;
+  const container = document.getElementById('custom-fields');
+  const div = document.createElement('div');
+  div.className = 'flex gap-2 items-end fade-in';
+  div.id = 'cf-' + customFieldCount;
+  div.innerHTML = `
+    <div class="flex-1">
+      <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Field Name</label>
+      <input class="cf-name w-full px-3 py-2.5 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Field name">
+    </div>
+    <div class="flex-1">
+      <label class="block text-xs font-medium mb-1" style="color:#94a3b8;">Value</label>
+      <input class="cf-value w-full px-3 py-2.5 rounded-lg text-sm" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;" placeholder="Value">
+    </div>
+    <button type="button" onclick="this.parentElement.remove()" class="p-2.5 rounded-lg" style="background:#334155;color:#94a3b8;"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+  `;
+  container.appendChild(div);
+  lucide.createIcons();
+}
+
+// Save / Update
+async function saveRecord() {
+  const idVal = document.getElementById('f-id').value.trim();
+  const nameVal = document.getElementById('f-name').value.trim();
+  if (!idVal || !nameVal) { showToast('ID and Name are required', 'error'); return; }
+
+  // Check duplicate
+  if (!isEditing) {
+    const dup = allRecords.find(r => r.identification_number === idVal);
+    if (dup) {
+      document.getElementById('id-conflict').classList.remove('hidden');
+      return;
+    }
+  }
+  document.getElementById('id-conflict').classList.add('hidden');
+
+  // Limit check
+  if (!isEditing && allRecords.length >= 999) {
+    showToast('Maximum 999 records reached. Delete some first.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+
+  // Gather fields
+  const record = {
+    identification_number: idVal,
+    name: nameVal,
+    address: document.getElementById('f-address').value,
+    phone_number: document.getElementById('f-phone').value,
+    email: document.getElementById('f-email').value
+  };
+  for (let i = 1; i <= 18; i++) {
+    record['field_' + i] = document.getElementById('f-add-' + i).value;
+  }
+
+  // Custom fields as JSON string
+  const customArr = [];
+  document.querySelectorAll('#custom-fields > div').forEach(div => {
+    const n = div.querySelector('.cf-name')?.value?.trim();
+    const v = div.querySelector('.cf-value')?.value?.trim();
+    if (n) customArr.push({ name: n, value: v || '' });
+  });
+  record.custom_fields_json = JSON.stringify(customArr);
+
+  let result;
+  if (isEditing && editingRecord) {
+    const updated = { ...editingRecord, ...record };
+    result = await window.dataSdk.update(updated);
+  } else {
+    result = await window.dataSdk.create(record);
+  }
+
+  btn.disabled = false;
+  btn.style.opacity = '1';
+
+  if (result.isOk) {
+    showToast(isEditing ? 'Record updated!' : 'Record saved!', 'success');
+    if (!isEditing) {
+      resetForm();
+      document.getElementById('pw-input').value = '';
+    }
+    isEditing = false;
+    editingRecord = null;
+  } else {
+    showToast('Error saving record', 'error');
+  }
+}
+
+function resetForm() {
+  document.getElementById('f-id').value = '';
+  document.getElementById('f-id').disabled = false;
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-address').value = '';
+  document.getElementById('f-phone').value = '';
+  document.getElementById('f-email').value = '';
+  for (let i = 1; i <= 18; i++) document.getElementById('f-add-' + i).value = '';
+  document.getElementById('custom-fields').innerHTML = '';
+  document.getElementById('id-conflict').classList.add('hidden');
+  isEditing = false;
+  editingRecord = null;
+  document.getElementById('form-heading').textContent = 'Add New Record';
+  document.getElementById('btn-save-text').textContent = 'Save Record';
+}
+
+// Search
+function searchRecord() {
+  const q = document.getElementById('search-input').value.trim();
+  const container = document.getElementById('search-results');
+  if (!q) {
+    // Show all records
+    if (allRecords.length === 0) {
+      container.innerHTML = `<div class="text-center py-12"><i data-lucide="inbox" style="width:48px;height:48px;color:#334155;margin:0 auto 12px;display:block;"></i><p style="color:#64748b;">No records found</p></div>`;
+      lucide.createIcons();
+      return;
+    }
+    renderResults(allRecords);
+    return;
+  }
+  const found = allRecords.filter(r => r.identification_number === q);
+  if (found.length === 0) {
+    container.innerHTML = `<div class="text-center py-12 fade-in"><i data-lucide="search-x" style="width:48px;height:48px;color:#334155;margin:0 auto 12px;display:block;"></i><p style="color:#64748b;">No record found for ID: <span class="mono">${q}</span></p></div>`;
+    lucide.createIcons();
+  } else {
+    renderResults(found);
+  }
+}
+
+document.getElementById('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') searchRecord(); });
+
+function renderResults(records) {
+  const container = document.getElementById('search-results');
+  container.innerHTML = '';
+  records.forEach(rec => {
+    const card = document.createElement('div');
+    card.className = 'rounded-2xl p-6 mb-4 fade-in';
+    card.style.cssText = 'background:#1e293b;border:1px solid #334155;';
+
+    let customFields = [];
+    try { customFields = JSON.parse(rec.custom_fields_json || '[]'); } catch(e) {}
+
+    const rows = [
+      ['Identification Number', rec.identification_number],
+      ['Name', rec.name],
+      ['Address', rec.address],
+      ['Phone', rec.phone_number],
+      ['Email', rec.email]
+    ];
+    for (let i = 0; i < 18; i++) {
+      const v = rec['field_' + (i+1)];
+      if (v) rows.push([ADDITIONAL_LABELS[i], v]);
+    }
+    customFields.forEach(cf => { if (cf.name) rows.push([cf.name, cf.value]); });
+
+    let html = `<div class="flex items-start justify-between mb-4">
+      <div><h3 class="font-bold text-lg" style="color:#f8fafc;">${rec.name || 'Unnamed'}</h3>
+      <p class="mono text-xs" style="color:#6d28d9;">ID: ${rec.identification_number}</p></div>
+      <div class="flex gap-2">
+        <button onclick="editRecord('${rec.identification_number}')" class="p-2 rounded-lg transition-all hover:opacity-80" style="background:#6d28d9;color:#f8fafc;" title="Edit"><i data-lucide="edit-2" style="width:14px;height:14px;"></i></button>
+        <button onclick="requestDelete('${rec.identification_number}')" class="p-2 rounded-lg transition-all hover:opacity-80" style="background:#ef4444;color:#fff;" title="Delete"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+      </div></div>`;
+
+    html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">';
+    rows.forEach(([label, val]) => {
+      if (val) html += `<div class="py-1.5" style="border-bottom:1px solid #0f172a;"><span class="text-xs" style="color:#64748b;">${label}</span><p class="text-sm" style="color:#e2e8f0;">${val}</p></div>`;
+    });
+    html += '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+  lucide.createIcons();
+}
+
+function editRecord(id) {
+  if (!isAuthenticated) { showPasswordGate(); return; }
+  const rec = allRecords.find(r => r.identification_number === id);
+  if (!rec) return;
+  isEditing = true;
+  editingRecord = rec;
+
+  document.getElementById('f-id').value = rec.identification_number;
+  document.getElementById('f-name').value = rec.name || '';
+  document.getElementById('f-address').value = rec.address || '';
+  document.getElementById('f-phone').value = rec.phone_number || '';
+  document.getElementById('f-email').value = rec.email || '';
+  for (let i = 1; i <= 18; i++) {
+    document.getElementById('f-add-' + i).value = rec['field_' + i] || '';
+  }
+
+  // Load custom fields
+  document.getElementById('custom-fields').innerHTML = '';
+  customFieldCount = 0;
+  try {
+    const cfs = JSON.parse(rec.custom_fields_json || '[]');
+    cfs.forEach(cf => {
+      addCustomField();
+      const last = document.getElementById('custom-fields').lastElementChild;
+      last.querySelector('.cf-name').value = cf.name;
+      last.querySelector('.cf-value').value = cf.value;
+    });
+  } catch(e) {}
+
+  switchView('add');
+}
+
+// Delete
+function requestDelete(id) {
+  pendingDeleteRecord = allRecords.find(r => r.identification_number === id);
+  if (pendingDeleteRecord) document.getElementById('delete-modal').classList.remove('hidden');
+}
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.add('hidden');
+  pendingDeleteRecord = null;
+}
+async function confirmDelete() {
+  if (!pendingDeleteRecord) return;
+  const result = await window.dataSdk.delete(pendingDeleteRecord);
+  closeDeleteModal();
+  if (result.isOk) {
+    showToast('Record deleted', 'success');
+    searchRecord();
+  } else {
+    showToast('Error deleting record', 'error');
+  }
+}
+
+// Init icons
+lucide.createIcons();
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e924f19e754e084',t:'MTc3NTY2MjE4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
